@@ -8,6 +8,51 @@
 #include <dirent.h>
 #include <stdbool.h>
 
+#define DEFAULT_OPTION 1
+
+enum type {
+    BLK,
+    CHR,
+    DIR_T,
+    FIFO,
+    LNK,
+    REG,
+    SOCK,
+    UNKNOWN,
+};
+
+char *d_typename[] = {
+    "block device",
+    "character device",
+    "directory",
+    "FIFO",
+    "symbolic link",
+    "regular file",
+    "UNIX domain socket",
+    "unknown",
+};
+
+int typechk(unsigned char type) {
+    switch (type) {
+        case DT_BLK:
+            return BLK;
+        case DT_CHR:
+            return CHR;
+        case DT_DIR:
+            return DIR_T;
+        case DT_FIFO:
+            return FIFO;
+        case DT_LNK:
+            return LNK;
+        case DT_REG:
+            return REG;
+        case DT_SOCK:
+            return SOCK;
+        default:
+            return UNKNOWN;
+    }
+}
+
 void usage(const char *name) {
     fprintf(stderr, "\n\
      _         _\n\
@@ -46,7 +91,7 @@ void printdirent_inode(const char *path) {
     } else
         ino = dest->d_ino;
 
-    printf("%s's inode is %016lx\n", path, ino);
+    printf("%s's inode is %ld (0x%016lx)\n", path, ino, ino);
 }
 
 void printdirent_name(const char *path) {
@@ -72,10 +117,11 @@ void printdirent_all(const char *path) {
 
     do {
         struct dirent *d = dest_dir_entry;
-        printf("d_ino       = %16lx\n", d->d_ino);
-        printf("d_off       = %16lx\n", d->d_off);
-        printf("d_reclen    = %16x\n", d->d_reclen);
-        printf("d_type      = %16x\n", d->d_type);
+        printf("[%s]\n", d->d_name);
+        printf("d_ino       = 0x%016lx(%ld)\n", d->d_ino, d->d_ino);
+        printf("d_off       = 0x%016lx\n", d->d_off);
+        printf("d_reclen    = 0x%04x\n", d->d_reclen);
+        printf("d_type      = 0x%01x (%s)\n", d->d_type, d_typename[typechk(d->d_type)]);
         printf("d_name      = %s\n\n", d->d_name);
 
         dest_dir_entry = (void*)dest_dir_entry + dest_dir_entry->d_reclen;
@@ -84,7 +130,7 @@ void printdirent_all(const char *path) {
 
 int opthandler(char *opt) {
     if (strncmp(opt, "-", 1) != 0)
-        return 1;
+        return DEFAULT_OPTION;
     opt++;
     return *opt;
 }
@@ -99,7 +145,7 @@ int main(int argc, char **argv) {
     void (*func)(const char*);
 
     switch (opthandler(argv[1])) {
-        case   1:
+        case   DEFAULT_OPTION:
         case 'a':
             func = printdirent_all;
             break;
