@@ -15,33 +15,47 @@ void usage(const char *name) {
  / _` \\ \\/ / _` |\n\
 | (_| |>  < (_| |\n\
  \\__,_/_/\\_\\__,_|\n\
-                  \n");
-    fprintf(stderr, "Usage: %s -ian directry\n", name);
+                  \n\
+Usage: %s -ina directry\n\
+<options>\n\
+    -i             :   inode of dest directory(or normal file).\n\
+    -n             :   like \"ls -a\".\n\
+    -a  <default>  :   show dest directory's dirent mamber.\n", name);
 }
 
 static struct dirent *direntByPath(const char *path) {
     DIR *dirp = opendir(path);
-    if (dirp == NULL) {
-        perror(path);
-        exit(1);
-    }
+    if (dirp == NULL)
+        return NULL;
 
     struct dirent *dest_dir_entry = malloc(sizeof(struct dirent));
     dest_dir_entry = readdir(dirp);
-    if (dest_dir_entry == NULL) {
-        perror("readdir");
-        exit(1);
-    }
+    if (dest_dir_entry == NULL)
+        return NULL;
+
     return dest_dir_entry; 
 }
 
 void printdirent_inode(const char *path) {
+    ino_t ino;
     struct dirent *dest = direntByPath(path);
-    printf("%016lx\n", dest->d_ino);
+    if (dest == NULL) {
+        struct stat *buf;
+        lstat(path, buf);
+        ino = buf->st_ino;
+    } else
+        ino = dest->d_ino;
+
+    printf("%s's inode is %016lx\n", path, ino);
 }
 
 void printdirent_name(const char *path) {
     struct dirent *dest = direntByPath(path);
+    if (dest == NULL) {
+        perror(path);
+        exit(1);
+    }
+
     do {
         printf("%s ", dest->d_name);
         dest = (void*)dest + dest->d_reclen;
@@ -51,6 +65,10 @@ void printdirent_name(const char *path) {
 
 void printdirent_all(const char *path) {
     struct dirent *dest_dir_entry = direntByPath(path);
+    if (dest_dir_entry == NULL) {
+        perror(path);
+        exit(1);
+    }
 
     do {
         struct dirent *d = dest_dir_entry;
