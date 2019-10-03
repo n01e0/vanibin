@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <stdbool.h>
+#include "hexdump.c"
+#include "dir_hexdump.c"
 
 #define DEFAULT_OPTION 1
 
@@ -54,18 +56,19 @@ int typechk(unsigned char type) {
 }
 
 void usage(const char *name) {
-    fprintf(stderr, "\n\
+    fprintf(stderr, "\
      _         _\n\
   __| |_  ____| |\n\
  / _` \\ \\/ / _` |\n\
 | (_| |>  < (_| |\n\
  \\__,_/_/\\_\\__,_|\n\
                   \n\
-Usage: %s -ina directry\n\
+Usage: %s -bina directry\n\
 <options>\n\
-    -i             :   inode of dest directory(or normal file).\n\
-    -n             :   like \"ls -a\".\n\
-    -a  <default>  :   show dest directory's dirent mamber.\n", name);
+    -b             :    binary dump\n\
+    -i             :    inode of dest directory(or normal file).\n\
+    -n             :    like \"ls -a\".\n\
+    -a  <default>  :    show dest directory's dirent mamber.\n", name);
 }
 
 static struct dirent *direntByPath(const char *path) {
@@ -79,6 +82,16 @@ static struct dirent *direntByPath(const char *path) {
         return NULL;
 
     return dest_dir_entry; 
+}
+
+void dump_binary(const char *path) {
+    struct dirent *dest = direntByPath(path);
+    if (dest == NULL) {
+        file_hexdump(path);        
+    } else {
+        dir_hexdump(path);
+    }
+
 }
 
 void printdirent_inode(const char *path) {
@@ -154,6 +167,9 @@ int main(int argc, char **argv) {
             break;
         case 'n':
             func = printdirent_name;
+            break;
+        case 'b':
+            func = dump_binary;
             break;
         default:
             func = usage;
